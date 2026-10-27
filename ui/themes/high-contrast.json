@@ -1,0 +1,49 @@
+{
+  "id": "high-contrast",
+  "name": "High Contrast",
+  "type": "dark",
+  "colors": {
+    "surfaceBackground": "#000000",
+    "surfacePanel": "#000000",
+    "surfaceHeader": "#121212",
+    "surfaceHover": "#222222",
+    "surfaceActive": "#333333",
+    "surfaceSelected": "#003366",
+    "borderMuted": "#444444",
+    "borderDefault": "#ffffff",
+    "borderFocus": "#ffff00",
+    "textPrimary": "#ffffff",
+    "textSecondary": "#dddddd",
+    "textMuted": "#aaaaaa",
+    "textInverse": "#000000",
+    "accentPrimary": "#ffff00",
+    "accentHover": "#ffff55",
+    "accentActive": "#cccc00",
+    "accentMuted": "#333300",
+    "statusSuccess": "#00ff66",
+    "statusWarning": "#ffaa00",
+    "statusError": "#ff3333",
+    "statusInfo": "#33ccff",
+    "gridLine": "#666666",
+    "gridHeaderBg": "#111111",
+    "gridHeaderText": "#ffffff",
+    "gridSelectionBorder": "#ffff00",
+    "gridSelectionBackground": "rgba(255, 255, 0, 0.3)"
+  },
+  "typography": {
+    "fontFamilyUi": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "fontFamilyCell": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "fontFamilyMono": "ui-monospace, monospace"
+  },
+  "borders": {
+    "radiusSm": "2px",
+    "radiusMd": "4px",
+    "radiusLg": "6px",
+    "widthDefault": "2px"
+  },
+  "elevation": {
+    "shadowSm": "none",
+    "shadowMd": "none",
+    "shadowLg": "none"
+  }
+}

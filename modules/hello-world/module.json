@@ -1,0 +1,27 @@
+{
+  "id": "hello-world",
+  "name": "Hello World",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "description": "Sample GridForge module demonstrating commands, panels, and self-tests.",
+  "author": "GridForge Team",
+  "requires": {
+    "core": ">=1.0.0"
+  },
+  "permissions": [
+    "cells.read",
+    "cells.write",
+    "selection.read",
+    "storage"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "hello:greet",
+        "title": "Say Hello",
+        "category": "Sample"
+      }
+    ]
+  },
+  "isolation": "worker"
+}

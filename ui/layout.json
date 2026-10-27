@@ -1,0 +1,24 @@
+{
+  "comfortable": {
+    "rowHeight": 26,
+    "colWidth": 100,
+    "headerHeight": 28,
+    "rowHeaderWidth": 46,
+    "toolbarHeight": 44,
+    "formulaBarHeight": 34,
+    "statusBarHeight": 26,
+    "sheetTabBarHeight": 32,
+    "sidePanelWidth": 320
+  },
+  "compact": {
+    "rowHeight": 21,
+    "colWidth": 80,
+    "headerHeight": 24,
+    "rowHeaderWidth": 40,
+    "toolbarHeight": 38,
+    "formulaBarHeight": 30,
+    "statusBarHeight": 22,
+    "sheetTabBarHeight": 28,
+    "sidePanelWidth": 280
+  }
+}

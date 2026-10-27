@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GridForgeThemeTokens",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "type",
+    "colors",
+    "typography",
+    "elevation",
+    "borders"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "colors": {
+      "type": "object"
+    },
+    "typography": {
+      "type": "object"
+    },
+    "borders": {
+      "type": "object"
+    },
+    "elevation": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "@gridforge/module-host",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@gridforge/sdk": "workspace:*",
+    "@gridforge/shared": "workspace:*"
+  }
+}

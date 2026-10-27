@@ -1,0 +1,10 @@
+{
+  "name": "@gridforge/desktop",
+  "version": "1.0.0",
+  "main": "./dist/main.js",
+  "dependencies": {
+    "@gridforge/module-host": "workspace:*",
+    "@gridforge/sdk": "workspace:*",
+    "@gridforge/shared": "workspace:*"
+  }
+}

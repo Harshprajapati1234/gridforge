@@ -1,0 +1,63 @@
+{
+  "name": "gridforge",
+  "version": "1.0.0",
+  "main": "apps/desktop/dist/main.js",
+  "private": true,
+  "description": "GridForge - Free, modular, Excel-style spreadsheet app for macOS",
+  "scripts": {
+    "dev": "vite --config apps/renderer/vite.config.ts",
+    "dev:electron": "electron apps/desktop/dist/main.js",
+    "build:packages": "tsc -b packages/*/tsconfig.json",
+    "build:desktop": "vite build --config apps/desktop/vite.config.ts",
+    "build:renderer": "vite build --config apps/renderer/vite.config.ts",
+    "start": "pnpm build:desktop && pnpm build:renderer && electron apps/desktop/dist/main.js",
+    "package:dir": "pnpm build:desktop && pnpm build:renderer && electron-builder --dir",
+    "package:mac": "pnpm build:desktop && pnpm build:renderer && electron-builder --mac",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:structure": "node tools/gf-cli/check-structure.js"
+  },
+  "build": {
+    "appId": "com.gridforge.app",
+    "productName": "GridForge",
+    "copyright": "Copyright © 2026 GridForge",
+    "directories": {
+      "output": "dist-package"
+    },
+    "files": [
+      "apps/desktop/dist/**/*",
+      "apps/renderer/dist/**/*",
+      "ui/**/*",
+      "modules/**/*",
+      "app.config.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "ui/app-icon/AppIcon.icns",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "GridForge Installer",
+      "icon": "ui/app-icon/AppIcon.icns"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

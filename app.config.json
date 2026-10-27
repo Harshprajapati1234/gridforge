@@ -1,0 +1,11 @@
+{
+  "appName": "GridForge",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "bridgePort": 47831,
+  "defaultTheme": "light",
+  "defaultDensity": "comfortable",
+  "builtInModules": [
+    "hello-world"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@gridforge/renderer",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build"
+  },
+  "dependencies": {
+    "@gridforge/shared": "workspace:*",
+    "@gridforge/ui-kit": "workspace:*",
+    "@gridforge/formula": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

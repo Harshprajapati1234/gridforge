@@ -1,0 +1,24 @@
+{
+  "id": "chaos-tester",
+  "name": "Chaos Tester",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "description": "Diagnostic module for testing crash recovery and permission denial.",
+  "author": "GridForge QA",
+  "requires": {
+    "core": ">=1.0.0"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "chaos:throw-error",
+        "title": "Throw Error",
+        "category": "Diagnostics"
+      }
+    ]
+  },
+  "isolation": "worker"
+}

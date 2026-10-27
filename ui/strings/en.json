@@ -1,0 +1,15 @@
+{
+  "app": {
+    "title": "GridForge",
+    "ready": "Ready",
+    "safeMode": "Safe Mode Active"
+  },
+  "modules": {
+    "title": "Modules",
+    "description": "Extend GridForge safely with isolated, hot-swappable plugins.",
+    "statusRunning": "Running",
+    "statusStopped": "Stopped",
+    "statusDisabled": "Disabled",
+    "statusError": "Error"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@gridforge/core",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@gridforge/shared": "workspace:*",
+    "@gridforge/sdk": "workspace:*",
+    "exceljs": "^4.4.0"
+  }
+}
