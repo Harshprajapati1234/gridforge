@@ -6,9 +6,20 @@ export interface ValidationResult {
 }
 
 const VALID_PERMISSIONS: ModulePermission[] = [
-  'cells.read', 'cells.write', 'selection.read', 'bridge',
-  'storage', 'clipboard', 'network:local', 'network:external',
-  'network:none', 'fs:dialog'
+  'cells.read',
+  'cells.write',
+  'selection.read',
+  'events',
+  'commands',
+  'ui',
+  'bridge',
+  'settings',
+  'storage',
+  'clipboard',
+  'network:local',
+  'network:external',
+  'network:none',
+  'fs:dialog'
 ];
 
 export function validateManifest(manifest: unknown): ValidationResult {

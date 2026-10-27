@@ -1,0 +1,1 @@
+{"root":["./src/archive-manager.ts","./src/crash-tracker.ts","./src/index.ts","./src/manifest-validator.ts","./src/module-host.ts","./src/module-logger.ts","./src/permission-guard.ts","./src/worker-runner-code.ts"],"version":"5.9.3"}

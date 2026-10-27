@@ -1,4 +1,10 @@
-export type FormulaValue = string | number | boolean | null | ExcelError;
+export type FormulaPrimitive = string | number | boolean | null | ExcelError;
+export type FormulaValue =
+  | FormulaPrimitive
+  | FormulaPrimitive[]
+  | FormulaPrimitive[][]
+  | any[]
+  | any[][];
 
 export interface ExcelError {
   isError: true;

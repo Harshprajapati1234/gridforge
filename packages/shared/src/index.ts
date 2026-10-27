@@ -1,3 +1,3 @@
-export * from './emitter.ts';
-export * from './uuid.ts';
-export * from './tokens.ts';
+export * from './emitter';
+export * from './uuid';
+export * from './tokens';

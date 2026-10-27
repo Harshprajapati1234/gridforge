@@ -1,3 +1,3 @@
-export * from './manifest.ts';
-export * from './context.ts';
-export * from './module.ts';
+export * from './manifest';
+export * from './context';
+export * from './module';

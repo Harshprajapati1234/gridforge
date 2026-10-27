@@ -1,0 +1,31 @@
+{
+  "id": "flipkart-links",
+  "name": "Flipkart Seller Hub SKU Automator",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "description": "Reads SKU / product URLs from the active sheet, queries the Chrome extension for title, image thumbnail, price, and stock, and writes back into adjacent columns.",
+  "author": "GridForge",
+  "requires": {
+    "core": ">=1.0.0"
+  },
+  "permissions": [
+    "cells.read",
+    "cells.write",
+    "selection.read",
+    "bridge",
+    "network:local",
+    "ui",
+    "commands"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "id": "flipkart:automate-skus",
+        "title": "Automate Flipkart SKUs",
+        "category": "E-Commerce"
+      }
+    ]
+  },
+  "main": "dist/index.js",
+  "isolation": "worker"
+}

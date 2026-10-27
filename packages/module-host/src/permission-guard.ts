@@ -18,6 +18,26 @@ export function createGuardedContext(
     ...baseContext,
     moduleId,
     permissions: declaredPermissions,
+    commands: {
+      registerCommand: (id, handler) => {
+        if (!has('commands')) throw new PermissionDeniedError(moduleId, 'commands');
+        return baseContext.commands.registerCommand(id, handler);
+      },
+      executeCommand: async (id, ...args) => {
+        if (!has('commands')) throw new PermissionDeniedError(moduleId, 'commands');
+        return baseContext.commands.executeCommand(id, ...args);
+      }
+    },
+    events: {
+      on: (event, listener) => {
+        if (!has('events')) throw new PermissionDeniedError(moduleId, 'events');
+        return baseContext.events.on(event, listener);
+      },
+      emit: (event, data) => {
+        if (!has('events')) throw new PermissionDeniedError(moduleId, 'events');
+        baseContext.events.emit(event, data);
+      }
+    },
     cells: {
       getCell: async (s, r, c) => {
         if (!has('cells.read')) throw new PermissionDeniedError(moduleId, 'cells.read');
@@ -40,6 +60,30 @@ export function createGuardedContext(
       getSelection: async () => {
         if (!has('selection.read')) throw new PermissionDeniedError(moduleId, 'selection.read');
         return baseContext.selection.getSelection();
+      }
+    },
+    ui: {
+      registerPanel: (panelId, renderer) => {
+        if (!has('ui')) throw new PermissionDeniedError(moduleId, 'ui');
+        baseContext.ui.registerPanel(panelId, renderer);
+      },
+      showToast: (message, type) => {
+        if (!has('ui')) throw new PermissionDeniedError(moduleId, 'ui');
+        baseContext.ui.showToast(message, type);
+      },
+      showDialog: async (opts) => {
+        if (!has('ui')) throw new PermissionDeniedError(moduleId, 'ui');
+        return baseContext.ui.showDialog(opts);
+      }
+    },
+    settings: {
+      get: async (k, def) => {
+        if (!has('settings')) throw new PermissionDeniedError(moduleId, 'settings');
+        return baseContext.settings.get(k, def);
+      },
+      set: async (k, v) => {
+        if (!has('settings')) throw new PermissionDeniedError(moduleId, 'settings');
+        return baseContext.settings.set(k, v);
       }
     },
     storage: {

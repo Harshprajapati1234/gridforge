@@ -21,8 +21,8 @@ export interface GridForgeModuleContext {
   readonly permissions: ReadonlyArray<ModulePermission>;
 
   commands: {
-    registerCommand(id: string, handler: (...args: unknown[]) => unknown): () => void;
-    executeCommand<T = unknown>(id: string, ...args: unknown[]): Promise<T>;
+    registerCommand(id: string, handler: (...args: any[]) => unknown): () => void;
+    executeCommand<T = unknown>(id: string, ...args: any[]): Promise<T>;
   };
   events: {
     on(event: string, listener: (data: unknown) => void): () => void;

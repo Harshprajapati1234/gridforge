@@ -105,4 +105,9 @@ export class DependencyGraph {
     dfs(startKey);
     return order.reverse();
   }
+
+  getDependents(sheet = 'default', r: number, c: number): string[] {
+    const key = this.key(sheet, r, c);
+    return Array.from(this.dependents.get(key) || []);
+  }
 }

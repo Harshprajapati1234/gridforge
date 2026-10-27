@@ -12,7 +12,9 @@
     "cells.read",
     "cells.write",
     "selection.read",
-    "storage"
+    "storage",
+    "commands",
+    "ui"
   ],
   "contributes": {
     "commands": [
@@ -23,5 +25,6 @@
       }
     ]
   },
+  "main": "dist/index.js",
   "isolation": "worker"
 }

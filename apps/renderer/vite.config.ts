@@ -18,5 +18,21 @@ export default defineConfig({
     extensions: ['.ts', '.tsx', '.mjs', '.js', '.jsx', '.json']
   },
   server: { port: 5173 },
-  build: { outDir: 'dist', emptyOutDir: true }
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('exceljs')) {
+            return 'exceljs';
+          }
+          if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+            return 'react-vendor';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 });

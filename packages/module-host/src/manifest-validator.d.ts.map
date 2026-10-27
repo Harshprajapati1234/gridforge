@@ -1,1 +1,0 @@
-{"version":3,"file":"manifest-validator.d.ts","sourceRoot":"","sources":["manifest-validator.ts"],"names":[],"mappings":"AAEA,MAAM,WAAW,gBAAgB;IAC/B,KAAK,EAAE,OAAO,CAAC;IACf,MAAM,EAAE,MAAM,EAAE,CAAC;CAClB;AAQD,wBAAgB,gBAAgB,CAAC,QAAQ,EAAE,OAAO,GAAG,gBAAgB,CA+BpE"}

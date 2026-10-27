@@ -6,6 +6,8 @@
   "description": "GridForge - Free, modular, Excel-style spreadsheet app for macOS",
   "scripts": {
     "dev": "vite --config apps/renderer/vite.config.ts",
+    "dev:fast": "electron apps/desktop/dist/main.js",
+    "start:fast": "electron apps/desktop/dist/main.js",
     "dev:electron": "electron apps/desktop/dist/main.js",
     "build:packages": "tsc -b packages/*/tsconfig.json",
     "build:desktop": "vite build --config apps/desktop/vite.config.ts",

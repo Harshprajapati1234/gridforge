@@ -9,6 +9,86 @@ export interface FormulaBarProps {
   onCancel: () => void;
 }
 
+const REF_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c', '#0891b2'];
+
+export function toggleReferenceAbsolute(formula: string, cursor: number): { newFormula: string; newCursor: number } {
+  const refRegex = /(\$?)([A-Z]+)(\$?)([0-9]+)/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = refRegex.exec(formula)) !== null) {
+    const start = match.index;
+    const end = start + match[0].length;
+    if (cursor >= start && cursor <= end) {
+      const colHasDollar = match[1] === '$';
+      const colLetters = match[2].toUpperCase();
+      const rowHasDollar = match[3] === '$';
+      const rowNumber = match[4];
+
+      let newRef = '';
+      if (!colHasDollar && !rowHasDollar) {
+        newRef = `$${colLetters}$${rowNumber}`;
+      } else if (colHasDollar && rowHasDollar) {
+        newRef = `${colLetters}$${rowNumber}`;
+      } else if (!colHasDollar && rowHasDollar) {
+        newRef = `$${colLetters}${rowNumber}`;
+      } else {
+        newRef = `${colLetters}${rowNumber}`;
+      }
+
+      const newFormula = formula.slice(0, start) + newRef + formula.slice(end);
+      const diff = newRef.length - match[0].length;
+      return { newFormula, newCursor: Math.max(0, cursor + diff) };
+    }
+  }
+
+  return { newFormula: formula, newCursor: cursor };
+}
+
+function renderHighlightedFormula(formula: string) {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\$?[A-Z]+\$?[0-9]+(?::\$?[A-Z]+\$?[0-9]+)?)/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let colorIdx = 0;
+
+  while ((match = regex.exec(formula)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`text-${lastIndex}`} style={{ color: 'var(--gf-color-text-primary)' }}>
+          {formula.slice(lastIndex, match.index)}
+        </span>
+      );
+    }
+    const color = REF_COLORS[colorIdx % REF_COLORS.length];
+    colorIdx++;
+    parts.push(
+      <span
+        key={`ref-${match.index}`}
+        style={{
+          color,
+          fontWeight: 600,
+          backgroundColor: `${color}18`,
+          borderRadius: '3px',
+          padding: '0 2px'
+        }}
+      >
+        {match[0]}
+      </span>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < formula.length) {
+    parts.push(
+      <span key={`text-${lastIndex}`} style={{ color: 'var(--gf-color-text-primary)' }}>
+        {formula.slice(lastIndex)}
+      </span>
+    );
+  }
+
+  return parts;
+}
+
 export const FormulaBar: React.FC<FormulaBarProps> = ({
   activeAddress,
   value,
@@ -28,7 +108,6 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
       return;
     }
 
-    // Match trailing identifier like =SU or =1+SU
     const match = /([A-Za-z_][\w]*)$/.exec(value);
     if (match) {
       const prefix = match[1].toUpperCase();
@@ -58,6 +137,20 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // F4 toggles $ absolute cell references
+    if (e.key === 'F4') {
+      e.preventDefault();
+      const cursor = inputRef.current?.selectionStart ?? value.length;
+      const { newFormula, newCursor } = toggleReferenceAbsolute(value, cursor);
+      onChange(newFormula);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(newCursor, newCursor);
+        }
+      }, 0);
+      return;
+    }
+
     if (showMenu && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -141,23 +234,49 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
         fx
       </span>
 
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Enter a value or formula (=SUM(A1:B10)...)"
-        style={{
-          flex: 1,
-          border: 'none',
-          outline: 'none',
-          backgroundColor: 'transparent',
-          color: 'var(--gf-color-text-primary)',
-          fontSize: '13px',
-          fontFamily: value.startsWith('=') ? 'var(--gf-font-font-family-mono)' : 'var(--gf-font-font-family-cell)'
-        }}
-      />
+      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+        {value.startsWith('=') && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              fontFamily: 'var(--gf-font-font-family-mono)',
+              fontSize: '13px',
+              lineHeight: '32px',
+              whiteSpace: 'pre',
+              overflow: 'hidden',
+              color: 'transparent'
+            }}
+          >
+            {renderHighlightedFormula(value)}
+          </div>
+        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter a value or formula (=SUM(A1:B10)...)"
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            outline: 'none',
+            backgroundColor: 'transparent',
+            color: value.startsWith('=') ? 'transparent' : 'var(--gf-color-text-primary)',
+            caretColor: 'var(--gf-color-text-primary)',
+            fontSize: '13px',
+            fontFamily: value.startsWith('=') ? 'var(--gf-font-font-family-mono)' : 'var(--gf-font-font-family-cell)',
+            zIndex: 1
+          }}
+        />
+      </div>
 
       {/* Autocomplete Dropdown Popover */}
       {showMenu && suggestions.length > 0 && (
@@ -208,7 +327,6 @@ export const FormulaBar: React.FC<FormulaBarProps> = ({
             })}
           </div>
 
-          {/* Active Function Documentation Preview */}
           {suggestions[selectedIndex] && (
             <div
               style={{

@@ -7,6 +7,7 @@ export class WorkbookModel {
   public sheets: SheetModel[] = [];
   public activeSheetId: string = '';
   public namedRanges: Map<string, string> = new Map();
+  public unsupportedFeatures: string[] = [];
 
   constructor(name = 'Untitled.xlsx') {
     this.id = generateId('wb');

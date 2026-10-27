@@ -9,7 +9,8 @@
     "core": ">=1.0.0"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "commands"
   ],
   "contributes": {
     "commands": [
@@ -20,5 +21,6 @@
       }
     ]
   },
+  "main": "dist/index.js",
   "isolation": "worker"
 }

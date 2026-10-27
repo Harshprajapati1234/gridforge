@@ -107,7 +107,8 @@ export const standardFunctions: Record<string, FunctionHandler> = {
     const d = args[1] != null ? toNum(args[1]) : 0;
     if (isNaN(n) || isNaN(d)) return makeError('#VALUE!');
     const f = Math.pow(10, d);
-    return Math.round(n * f) / f;
+    const sign = n < 0 ? -1 : 1;
+    return (sign * Math.round(Math.abs(n) * f)) / f;
   },
   ROUNDUP: (args) => {
     const n = toNum(args[0]);
@@ -130,7 +131,8 @@ export const standardFunctions: Record<string, FunctionHandler> = {
   MOD: (args) => {
     const a = toNum(args[0]), b = toNum(args[1]);
     if (isNaN(a) || isNaN(b)) return makeError('#VALUE!');
-    return b === 0 ? makeError('#DIV/0!') : a % b;
+    if (b === 0) return makeError('#DIV/0!');
+    return a - b * Math.floor(a / b);
   },
   POWER: (args) => {
     const a = toNum(args[0]), b = toNum(args[1]);
@@ -219,7 +221,7 @@ export const standardFunctions: Record<string, FunctionHandler> = {
     const ranges: any[][] = [];
     const critList: any[] = [];
     for (let i = 0; i < args.length; i += 2) {
-      ranges.push(Array.isArray(args[i]) ? (args[i] as any[]).flat(Infinity) : [args[i]]);
+      ranges.push(Array.isArray(args[i]) ? (args[i] as any as any[]).flat(Infinity) : [args[i]]);
       critList.push(args[i + 1]);
     }
     const len = ranges[0].length;
@@ -255,7 +257,7 @@ export const standardFunctions: Record<string, FunctionHandler> = {
     const critRanges: any[][] = [];
     const critList: any[] = [];
     for (let i = 1; i < args.length; i += 2) {
-      critRanges.push(Array.isArray(args[i]) ? (args[i] as any[]).flat(Infinity) : [args[i]]);
+      critRanges.push(Array.isArray(args[i]) ? (args[i] as any as any[]).flat(Infinity) : [args[i]]);
       critList.push(args[i + 1]);
     }
     let sum = 0;
@@ -310,12 +312,91 @@ export const standardFunctions: Record<string, FunctionHandler> = {
   },
 
   // --- Logic ---
-  IF: (args) => (args[0] ? args[1] : (args.length > 2 ? args[2] : false)),
+  IF: (args) => {
+    const cond = args[0];
+    if (isExcelError(cond)) return cond;
+    let isTrue = false;
+    if (typeof cond === 'boolean') {
+      isTrue = cond;
+    } else if (typeof cond === 'number') {
+      isTrue = cond !== 0;
+    } else if (cond === null || cond === undefined || cond === '') {
+      isTrue = false;
+    } else {
+      const n = toNum(cond);
+      if (!isNaN(n)) isTrue = n !== 0;
+      else isTrue = String(cond).trim().toUpperCase() === 'TRUE';
+    }
+    return isTrue ? args[1] : (args.length > 2 ? args[2] : false);
+  },
   IFERROR: (args) => (isExcelError(args[0]) ? args[1] : args[0]),
   IFNA: (args) => (isExcelError(args[0]) && args[0].code === '#N/A' ? args[1] : args[0]),
-  AND: (args) => args.flat(Infinity).every(Boolean),
-  OR: (args) => args.flat(Infinity).some(Boolean),
-  NOT: (args) => !Boolean(args[0]),
+  AND: (args) => {
+    const flat = args.flat(Infinity);
+    let count = 0;
+    for (const a of flat) {
+      if (isExcelError(a)) return a;
+      if (a === null || a === undefined) continue;
+      if (typeof a === 'boolean') {
+        count++;
+        if (!a) return false;
+      } else if (typeof a === 'number') {
+        count++;
+        if (a === 0) return false;
+      } else if (typeof a === 'string') {
+        const upper = a.trim().toUpperCase();
+        if (upper === 'TRUE') {
+          count++;
+        } else if (upper === 'FALSE') {
+          count++;
+          return false;
+        } else {
+          continue;
+        }
+      }
+    }
+    if (count === 0) return makeError('#VALUE!');
+    return true;
+  },
+  OR: (args) => {
+    const flat = args.flat(Infinity);
+    let count = 0;
+    for (const a of flat) {
+      if (isExcelError(a)) return a;
+      if (a === null || a === undefined) continue;
+      if (typeof a === 'boolean') {
+        count++;
+        if (a) return true;
+      } else if (typeof a === 'number') {
+        count++;
+        if (a !== 0) return true;
+      } else if (typeof a === 'string') {
+        const upper = a.trim().toUpperCase();
+        if (upper === 'TRUE') {
+          count++;
+          return true;
+        } else if (upper === 'FALSE') {
+          count++;
+        } else {
+          continue;
+        }
+      }
+    }
+    if (count === 0) return makeError('#VALUE!');
+    return false;
+  },
+  NOT: (args) => {
+    const val = args[0];
+    if (isExcelError(val)) return val;
+    if (val === null || val === undefined || val === '') return true;
+    if (typeof val === 'boolean') return !val;
+    const n = toNum(val);
+    if (!isNaN(n)) return n === 0;
+    const upper = String(val).trim().toUpperCase();
+    if (upper === 'TRUE') return false;
+    if (upper === 'FALSE') return true;
+    return makeError('#VALUE!');
+  },
   XOR: (args) => {
     const bools = args.flat(Infinity).filter((x) => typeof x === 'boolean');
     return bools.filter(Boolean).length % 2 === 1;
@@ -472,7 +553,9 @@ export const standardFunctions: Record<string, FunctionHandler> = {
 
     for (const row of rows) {
       const key = Array.isArray(row) ? row[0] : row;
-      const match = exact ? (String(key).toLowerCase() === String(lookup).toLowerCase()) : (key <= lookup);
+      const match = exact
+        ? (String(key).toLowerCase() === String(lookup ?? '').toLowerCase())
+        : (lookup !== null && key != null && key <= lookup);
       if (match) {
         return Array.isArray(row) ? (row[colIdx - 1] ?? makeError('#REF!')) : row;
       }
@@ -590,9 +673,24 @@ export const standardFunctions: Record<string, FunctionHandler> = {
     return result;
   },
   SORT: (args) => {
-    const items = [...args.flat(Infinity)];
-    const order = args[1] === -1 ? -1 : 1;
-    items.sort((a, b) => {
+    let items: any[];
+    let order = 1;
+    if (Array.isArray(args[0])) {
+      items = [...(args[0] as any[]).flat(Infinity)];
+      order = args[2] === -1 || args[1] === -1 ? -1 : 1;
+    } else {
+      const last = args[args.length - 1];
+      if (last === -1 || last === 1) {
+        order = last;
+        items = args.slice(0, args.length - 1).flat(Infinity);
+      } else {
+        items = args.flat(Infinity);
+      }
+    }
+    items.sort((a: any, b: any) => {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
       if (a < b) return -1 * order;
       if (a > b) return 1 * order;
       return 0;

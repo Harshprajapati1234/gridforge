@@ -21,7 +21,7 @@ import {
   cellAddress,
   PivotResult
 } from '@gridforge/core';
-import { Banner } from '@gridforge/ui-kit';
+import { Banner, Dialog } from '@gridforge/ui-kit';
 import { Header } from './components/Header';
 import { RibbonToolbar } from './components/RibbonToolbar';
 import { FormulaBar } from './components/FormulaBar';
@@ -39,6 +39,7 @@ import { CommentModal } from './components/CommentModal';
 import { BridgeModal } from './components/BridgeModal';
 import { ChartModal } from './components/ChartModal';
 import { PivotModal } from './components/PivotModal';
+import { FlipkartModal } from './components/FlipkartModal';
 import { ModuleInfo } from './types/electron';
 import { DefaultFormulaEngine, DependencyGraph, EvalContext, isExcelError } from '@gridforge/formula';
 
@@ -63,6 +64,9 @@ export const App: React.FC = () => {
   const [isCommentOpen, setIsCommentOpen] = React.useState(false);
   const [isChartOpen, setIsChartOpen] = React.useState(false);
   const [isPivotOpen, setIsPivotOpen] = React.useState(false);
+  const [isFlipkartOpen, setIsFlipkartOpen] = React.useState(false);
+  const [unsupportedFeatures, setUnsupportedFeatures] = React.useState<string[]>([]);
+  const [isUnsupportedDialogOpen, setIsUnsupportedDialogOpen] = React.useState(false);
 
   // --- Workbook & Grid State ---
   const [workbook, setWorkbook] = React.useState<WorkbookModel>(() => {
@@ -220,7 +224,7 @@ export const App: React.FC = () => {
         cell.v = '#CIRC!';
       } else {
         const res = engine.evaluate(cell.f, ctx);
-        cell.v = isExcelError(res) ? res.code : res;
+        cell.v = isExcelError(res) ? res.code : (Array.isArray(res) ? JSON.stringify(res) : res);
       }
     }
 
@@ -235,7 +239,7 @@ export const App: React.FC = () => {
             depCell.v = '#CIRC!';
           } else {
             const res = engine.evaluate(depCell.f, ctx);
-            depCell.v = isExcelError(res) ? res.code : res;
+            depCell.v = isExcelError(res) ? res.code : (Array.isArray(res) ? JSON.stringify(res) : res);
           }
         }
       }
@@ -253,7 +257,8 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleCellCommit = (r: number, c: number, rawVal: string, explicitFormula?: string) => {
+  const handleCommitToSheet = (targetSheetId: string, r: number, c: number, rawVal: string, explicitFormula?: string) => {
+    const sheet = workbook.getSheet(targetSheetId) || activeSheet;
     const isFormula = explicitFormula ? true : rawVal.startsWith('=');
     const formula = isFormula ? (explicitFormula || rawVal) : undefined;
     const engine = formulaEngineRef.current;
@@ -262,24 +267,85 @@ export const App: React.FC = () => {
     let evaluatedValue: any = rawVal;
     if (formula) {
       const deps = engine.dependencies(formula);
-      depGraph.setFormulaDeps(activeSheet.id, r, c, deps.cells, deps.ranges);
-      const cellKey = `${activeSheet.id}!${r},${c}`;
+      depGraph.setFormulaDeps(sheet.id, r, c, deps.cells, deps.ranges);
+      const cellKey = `${sheet.id}!${r},${c}`;
       if (depGraph.hasCycle(cellKey)) {
         evaluatedValue = '#CIRC!';
       } else {
-        const res = engine.evaluate(formula, getEvalContext(activeSheet));
+        const res = engine.evaluate(formula, getEvalContext(sheet));
         evaluatedValue = isExcelError(res) ? res.code : res;
       }
     } else {
-      depGraph.setFormulaDeps(activeSheet.id, r, c, [], []);
+      depGraph.setFormulaDeps(sheet.id, r, c, [], []);
       const num = Number(rawVal);
       evaluatedValue = !isNaN(num) && rawVal.trim() !== '' ? num : rawVal;
     }
 
-    commandBus.execute(new SetCellContentCommand(activeSheet.id, r, c, evaluatedValue, formula));
-    recalculateCellAndDependents(activeSheet, r, c);
+    commandBus.execute(new SetCellContentCommand(sheet.id, r, c, evaluatedValue, formula));
+    recalculateCellAndDependents(sheet, r, c);
     triggerGridRefresh();
   };
+
+  const handleCellCommit = (r: number, c: number, rawVal: string, explicitFormula?: string) => {
+    handleCommitToSheet(activeSheet.id, r, c, rawVal, explicitFormula);
+  };
+
+  // Wire module host requests to the real workbook, commandBus, undo/redo, and selection
+  React.useEffect(() => {
+    if (!window.gridForge?.on) return;
+
+    const unsub = window.gridForge.on('host:request', (req: any) => {
+      const { reqId, action, payload } = req;
+      try {
+        if (action === 'cells:get-cell') {
+          const sh = workbook.getSheet(payload.sheetId) || activeSheet;
+          const c = sh.getCell(payload.r, payload.c);
+          window.gridForge?.sendRendererResponse({
+            reqId,
+            result: c ? { r: payload.r, c: payload.c, v: c.v, f: c.f, meta: c.meta } : null
+          });
+        } else if (action === 'cells:get-range') {
+          const sh = workbook.getSheet(payload.sheetId) || activeSheet;
+          const rows: any[][] = [];
+          for (let r = payload.sr; r <= payload.er; r++) {
+            const row: any[] = [];
+            for (let c = payload.sc; c <= payload.ec; c++) {
+              const cell = sh.getCell(r, c);
+              row.push(cell ? { r, c, v: cell.v, f: cell.f, meta: cell.meta } : null);
+            }
+            rows.push(row);
+          }
+          window.gridForge?.sendRendererResponse({ reqId, result: rows });
+        } else if (action === 'cells:set-cell') {
+          const rawVal = payload.value?.v != null ? String(payload.value.v) : '';
+          handleCommitToSheet(payload.sheetId || activeSheet.id, payload.r, payload.c, rawVal, payload.value?.f);
+          window.gridForge?.sendRendererResponse({ reqId, result: true });
+        } else if (action === 'cells:set-range') {
+          for (const item of (payload.cells || [])) {
+            const rawVal = item.v != null ? String(item.v) : '';
+            handleCommitToSheet(payload.sheetId || activeSheet.id, item.r, item.c, rawVal, item.f);
+          }
+          window.gridForge?.sendRendererResponse({ reqId, result: true });
+        } else if (action === 'selection:get-selection') {
+          const parsed = parseAddress(activeAddress) || { r: 0, c: 0 };
+          window.gridForge?.sendRendererResponse({
+            reqId,
+            result: {
+              sheetId: activeSheet.id,
+              activeCell: parsed,
+              ranges: [selectionRange]
+            }
+          });
+        } else {
+          window.gridForge?.sendRendererResponse({ reqId, error: `Unknown action: ${action}` });
+        }
+      } catch (err: any) {
+        window.gridForge?.sendRendererResponse({ reqId, error: err?.message || String(err) });
+      }
+    });
+
+    return unsub;
+  }, [workbook, activeSheet, activeAddress, selectionRange, commandBus]);
 
   const handleFormulaCommit = () => {
     const parsed = parseAddress(activeAddress);
@@ -417,33 +483,7 @@ export const App: React.FC = () => {
   };
 
   const handleFlipkartAutomate = () => {
-    const col = selectionRange.startCol;
-    const startRow = Math.max(1, selectionRange.startRow);
-    const endRow = Math.max(startRow, selectionRange.endRow);
-
-    activeSheet.setCell(0, col + 1, { v: 'Product Title', style: { bold: true, bgColor: '#f1f5f9' } });
-    activeSheet.setCell(0, col + 2, { v: 'Product Image', style: { bold: true, bgColor: '#f1f5f9' } });
-    activeSheet.setCell(0, col + 3, { v: 'Price (₹)', style: { bold: true, bgColor: '#f1f5f9', align: 'right' } });
-    activeSheet.setCell(0, col + 4, { v: 'Stock Status', style: { bold: true, bgColor: '#f1f5f9' } });
-
-    for (let r = startRow; r <= endRow; r++) {
-      const cell = activeSheet.getCell(r, col);
-      const val = String(cell?.v ?? '').trim();
-      if (!val) continue;
-
-      const isUrl = /^https?:\/\//i.test(val);
-      const sku = isUrl ? (val.split('/').pop() || val) : val;
-
-      activeSheet.setCell(r, col + 1, { v: `Flipkart Verified: ${sku}` });
-      activeSheet.setCell(r, col + 2, {
-        v: `https://rukminim1.flixcart.com/image/128/128/sku-${r}.jpeg`,
-        hyperlink: `https://rukminim1.flixcart.com/image/800/800/sku-${r}.jpeg`
-      });
-      activeSheet.setCell(r, col + 3, { v: 499 + (r * 150) });
-      activeSheet.setCell(r, col + 4, { v: 'In Stock' });
-    }
-
-    triggerGridRefresh();
+    setIsFlipkartOpen(true);
   };
 
   // --- File Open / Save Handlers ---
@@ -452,16 +492,20 @@ export const App: React.FC = () => {
     const file = await window.gridForge.openFileDialog();
     if (!file) return;
 
+    const u8 = file.data instanceof Uint8Array ? file.data : new Uint8Array(file.data);
     if (file.name.endsWith('.xlsx')) {
-      const u8 = new Uint8Array(file.data);
       const newWb = await XlsxHandler.importBuffer(u8);
       newWb.name = file.name;
       setWorkbook(newWb);
       setCommandBus(new CommandBus(newWb));
       setActiveSheetId(newWb.activeSheetId);
       triggerGridRefresh();
+      if (newWb.unsupportedFeatures && newWb.unsupportedFeatures.length > 0) {
+        setUnsupportedFeatures(newWb.unsupportedFeatures);
+        setIsUnsupportedDialogOpen(true);
+      }
     } else if (file.name.endsWith('.csv') || file.name.endsWith('.tsv')) {
-      const text = new TextDecoder().decode(new Uint8Array(file.data));
+      const text = new TextDecoder().decode(u8);
       const newWb = new WorkbookModel(file.name);
       CsvHandler.importCsv(text, newWb, file.name.replace(/\.[^/.]+$/, ''));
       setWorkbook(newWb);
@@ -478,7 +522,7 @@ export const App: React.FC = () => {
     if (!targetPath) return;
 
     const buffer = await XlsxHandler.exportBuffer(workbook);
-    await window.gridForge.writeFile(targetPath, Array.from(buffer));
+    await window.gridForge.writeFile(targetPath, buffer);
     workbook.name = targetPath.split('/').pop() || workbook.name;
     triggerGridRefresh();
   };
@@ -490,7 +534,7 @@ export const App: React.FC = () => {
 
     const csvText = CsvHandler.exportCsv(workbook, activeSheet.id);
     const u8 = new TextEncoder().encode(csvText);
-    await window.gridForge.writeFile(targetPath, Array.from(u8));
+    await window.gridForge.writeFile(targetPath, u8);
   };
 
   // --- Sheet Tabs ---
@@ -555,6 +599,8 @@ export const App: React.FC = () => {
         onOpenChart={() => setIsChartOpen(true)}
         onOpenPivot={() => setIsPivotOpen(true)}
         onFlipkartAutomate={handleFlipkartAutomate}
+        onOpenModules={() => setIsModulesOpen(true)}
+        onOpenBridge={() => setIsBridgeOpen(true)}
       />
 
       <FormulaBar
@@ -607,6 +653,13 @@ export const App: React.FC = () => {
         onActiveCellChange={handleActiveCellChange}
         onCellCommit={handleCellCommit}
         onSelectionRangeChange={setSelectionRange}
+        onDeleteRange={(range) => {
+          for (let r = range.startRow; r <= range.endRow; r++) {
+            for (let c = range.startCol; c <= range.endCol; c++) {
+              handleCellCommit(r, c, '');
+            }
+          }
+        }}
       />
 
       {/* Excel Sheet Tabs */}
@@ -720,6 +773,52 @@ export const App: React.FC = () => {
         selectionRange={selectionRange}
         onInsertPivotSheet={handleInsertPivotSheet}
       />
+
+      <FlipkartModal
+        isOpen={isFlipkartOpen}
+        onClose={() => setIsFlipkartOpen(false)}
+        sheet={activeSheet}
+        selectionRange={selectionRange}
+        onCommitCell={handleCommitToSheet}
+      />
+
+      <Dialog
+        isOpen={isUnsupportedDialogOpen}
+        title="Workbook Import Notice: Unsupported Features"
+        onClose={() => setIsUnsupportedDialogOpen(false)}
+        width="520px"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--gf-text-primary)', lineHeight: 1.5 }}>
+            This workbook was opened successfully, and all cell values, formulas, styles, dimensions, and merged ranges were preserved. However, GridForge does not yet support the following Excel features found in this file:
+          </p>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--gf-text-secondary)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {unsupportedFeatures.map((feat, idx) => (
+              <li key={idx} style={{ fontWeight: 500 }}>{feat}</li>
+            ))}
+          </ul>
+          <div style={{ padding: '8px 12px', background: 'var(--gf-surface-panel)', borderRadius: 6, border: '1px solid var(--gf-border-default)', fontSize: 12, color: 'var(--gf-text-muted)' }}>
+            These unsupported items were omitted to protect data integrity and avoid workbook corruption.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+            <button
+              onClick={() => setIsUnsupportedDialogOpen(false)}
+              style={{
+                padding: '6px 16px',
+                background: 'var(--gf-interactive-primary)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 13
+              }}
+            >
+              Acknowledge & Continue
+            </button>
+          </div>
+        </div>
+      </Dialog>
 
       <StatusBar
         moduleCount={modules.length}

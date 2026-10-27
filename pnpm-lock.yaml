@@ -54,6 +54,9 @@ importers:
 
   apps/renderer:
     dependencies:
+      '@gridforge/formula':
+        specifier: workspace:*
+        version: link:../../packages/formula
       '@gridforge/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -66,6 +69,39 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+
+  packages/bridge-service:
+    dependencies:
+      '@gridforge/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/core:
+    dependencies:
+      '@gridforge/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@gridforge/shared':
+        specifier: workspace:*
+        version: link:../shared
+      exceljs:
+        specifier: ^4.4.0
+        version: 4.4.0
+
+  packages/formula:
+    dependencies:
+      '@gridforge/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/grid:
+    dependencies:
+      '@gridforge/core':
+        specifier: workspace:*
+        version: link:../core
+      '@gridforge/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/module-host:
     dependencies:

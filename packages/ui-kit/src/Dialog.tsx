@@ -6,13 +6,14 @@ export interface DialogProps {
   title: string;
   children: React.ReactNode;
   details?: string;
+  width?: string;
   onClose: () => void;
   confirmLabel?: string;
   onConfirm?: () => void;
 }
 
 export const Dialog: React.FC<DialogProps> = ({
-  isOpen, title, children, details, onClose, confirmLabel, onConfirm
+  isOpen, title, children, details, width, onClose, confirmLabel, onConfirm
 }) => {
   const [copied, setCopied] = React.useState(false);
   if (!isOpen) return null;
@@ -24,7 +25,7 @@ export const Dialog: React.FC<DialogProps> = ({
       zIndex: 1000, backdropFilter: 'blur(3px)'
     }}>
       <div style={{
-        width: '460px', maxWidth: '90vw', backgroundColor: 'var(--gf-color-surface-panel)',
+        width: width || '460px', maxWidth: '90vw', backgroundColor: 'var(--gf-color-surface-panel)',
         borderRadius: 'var(--gf-border-radius-lg)', boxShadow: 'var(--gf-elevation-shadow-lg)',
         border: '1px solid var(--gf-color-border-default)', overflow: 'hidden', display: 'flex', flexDirection: 'column'
       }}>

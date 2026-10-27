@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/commands/cell-commands.ts","./src/commands/command.ts","./src/commands/data-commands.ts","./src/io/csv-handler.ts","./src/io/xlsx-handler.ts","./src/model/cell.ts","./src/model/data-tools.ts","./src/model/sheet.ts","./src/model/workbook.ts","./src/pivot/pivot-engine.ts"],"version":"5.9.3"}
